@@ -1,0 +1,498 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+
+typedef struct _mat{char disciplina[40]; float tempos;}mat;
+typedef struct matric
+{
+	int matricula;
+	int pontos;    /*pontos de falta acumulados por esse estudante */
+	int faltas[9]; /*faltas por disciplina*/
+}MATRIC;
+typedef struct aluno
+{
+	char nome[31];
+	char matricula[6];
+	char turma[11];
+}ALUNO;
+	
+
+void incluir(ALUNO a,char data[11],char materia[20],int n_faltas,char falta_justificada)
+{ 
+	FILE *arquivo;int i;
+     
+     arquivo=fopen("Cadastro.txt","a");
+     fputc((int) '\n',arquivo);
+     fprintf(arquivo," %s",a.matricula);
+     for(i=1;i<=14 -strlen(a.matricula);i++)
+     fprintf(arquivo," ");
+     fprintf(arquivo,"%s",a.nome);
+     for(i=1;i<=31 -strlen(a.nome);i++)
+     fprintf(arquivo," ");
+     fprintf(arquivo,"%s",a.turma);
+     for(i=1;i<=11-strlen(a.turma);i++)
+     fprintf(arquivo," ");
+     fprintf(arquivo,"%s",data);
+     for(i=1;i<=11-strlen(data);i++)
+     fprintf(arquivo," ");
+     fprintf(arquivo,"%s",materia);
+     for(i=1;i<=13 -strlen(materia);i++)
+     fprintf(arquivo," ");
+     fprintf(arquivo,"%d       ",n_faltas);
+     if(n_faltas<10)fprintf(arquivo," ");
+     fprintf(arquivo,"%c",falta_justificada);
+     fclose(arquivo);
+     
+ }
+ 
+		
+	
+ 
+int ler_linha(int matricula,FILE* arquivo)
+{   
+	int i,n,MATRICULA;
+
+	char ch;
+	fscanf(arquivo," %d",&MATRICULA);
+	if(MATRICULA==matricula)
+	{
+	for(i=1;i<=75;i++)
+	fgetc(arquivo);
+	fscanf(arquivo," %d",&n);
+	for(i=(n>=10);i<=7;i++)
+	fgetc(arquivo);
+	ch=fgetc(arquivo);
+	if(ch=='N')
+	{
+		n=(3*n);fgetc(arquivo);
+		return n;
+	}
+	else
+	{
+		fgetc(arquivo);
+		return n;
+    }
+    }
+    else
+    {
+    while ( (ch=fgetc(arquivo))!='\n'){if(ch==EOF)break;}
+    return 0;
+    }
+}
+int pontos_perdidos(int matricula)
+{
+	int soma=0;
+	FILE* arquivo;
+	arquivo=fopen("Cadastro.txt","r");
+	while ( (fgetc(arquivo))!='\n'){}
+	while ( (fgetc(arquivo))!='\n'){}
+	while ( (fgetc(arquivo))!='\n'){}
+	while((fgetc(arquivo))!=EOF)
+	{
+	soma = soma + ler_linha(matricula,arquivo);
+    }
+    fclose(arquivo);
+    return soma;
+}
+void imprimir_arquivo()
+{
+	FILE* arq;
+	char ch;
+	arq=fopen("Cadastro.txt","r");
+	if(arq==NULL)
+	{printf("Erro");return;}
+	
+	while((ch=fgetc(arq))!=EOF)
+	{
+		putchar(ch);
+	}
+	fclose(arq);
+}
+
+void apagar_linha(int x)
+{
+	int i;
+	long int tamanho;
+	FILE *arq;
+	char *tmp,*asd;
+	char ch;
+	arq=fopen("Cadastro.txt","r");
+	fseek(arq,0,2);
+    tmp=(char*) malloc(ftell(arq));
+    tamanho=ftell(arq);
+    asd=tmp;
+    fseek(arq,0,0);
+    
+	for(i=(tamanho -(95+101+3+((x-1)*92))<100)+1;i<=95+101+3+((x-1)*92);i++)
+	{
+		(*tmp)=fgetc(arq);tmp=tmp+1;
+	}
+	fseek(arq,93,1);
+	while((ch=fgetc(arq))!=EOF)
+	{
+		(*tmp)=ch;tmp++;
+	}
+    
+	(*tmp)='\0';
+	fclose(arq);arq=fopen("Cadastro.txt","w");
+	tmp=asd;
+	while((*tmp)!='\0')
+	{
+		fputc((int) (*tmp),arq);tmp=tmp+1;
+	}
+	free(asd);	
+	fclose(arq);
+}
+void imprimir_linha(int x)
+{
+	FILE *arq;
+	char *tmp,*asd;
+	int i;
+	arq=fopen("Cadastro.txt","r");
+	fseek(arq,0,2);
+    tmp=(char*) malloc(100);
+    asd=tmp;
+    fseek(arq,95+101+6+((x-1)*93),0);
+    for(i=1;i<=92;i++)
+	{
+		(*tmp)=fgetc(arq);tmp=tmp+1;
+	}
+    (*tmp)='\0';
+    printf("%s",asd);
+    free(asd);
+    fclose(arq);
+}
+void atualizar_linha(int x,ALUNO a,char data[11],char materia[20],int n_faltas,char falta_justificada)
+{
+	apagar_linha(x);
+	incluir(a,data,materia,n_faltas,falta_justificada);
+}
+int tempo(char data[11])
+{
+
+	FILE *arq;
+	int i,dia1,mes1,dia2,mes2,tempo;
+	arq=fopen("tempo.txt","r");
+	if(arq!=NULL)
+	{
+	fscanf(arq,"%d/%d",&dia1,&mes1);
+	fseek(arq,6,0);
+	fscanf(arq,"%d",&tempo);
+	fclose(arq);
+	dia2=((int) data[0] -48)*10 +((int)data[1] -48);
+	mes2=((int) data[3] -48)*10 +((int)data[4] -48);
+	
+	arq=fopen("tempo.txt","w");
+	for(i=0;i<5;i++)
+	fputc((int) data[i],arq);
+	fputc((int) ' ',arq);
+	if(mes2==mes1)
+	{
+	fprintf(arq,"%d",tempo + dia2-dia1);
+	fclose(arq);return (tempo+dia2-dia1);
+    }
+	else
+	{
+	fprintf(arq,"%d",tempo + 30-dia1+dia2);
+	fclose(arq);return (tempo+30-dia1+dia2);
+    }
+    }
+    else
+    {
+		tempo=0;
+	dia2=((int) data[0] -48)*10 +((int)data[1] -48);
+	mes2=((int) data[3] -48)*10 +((int)data[4] -48);
+	
+	arq=fopen("tempo.txt","w");
+	for(i=0;i<5;i++)
+	fputc((int) data[i],arq);
+	fputc((int) ' ',arq);
+	fprintf(arq,"%d",0);
+	fclose(arq);
+	return 0;
+    }
+}
+int matricula_linha(int x)
+{
+  int MATRICULA;
+  FILE *arq;
+  arq=fopen("Cadastro.txt","r");
+  fseek(arq,95+101+6+((x-1)*93),0);
+  fscanf(arq,"%d",&MATRICULA);
+  fclose(arq);
+  return MATRICULA;
+  
+}
+int ler_linha2(int matricula,char *materia,FILE* arquivo)
+{   
+	char MATERIA[14];
+	int i,n,MATRICULA;
+
+	char ch;
+	fscanf(arquivo," %d",&MATRICULA);
+	if(MATRICULA==matricula)
+	{
+	for(i=1;i<=75;i++)
+	fgetc(arquivo);
+	fscanf(arquivo,"%d",&n);
+	fseek(arquivo,-14-(n>=10),1);
+	for(i=0;i<13;i++)
+	{
+		MATERIA[i]=fgetc(arquivo);
+	}
+	MATERIA[13]='\0';	
+	if(strcmp(MATERIA,materia)==0)
+	{
+    while ( (ch=fgetc(arquivo))!='\n'){if(ch==EOF)break;}
+    return n;
+    }
+    else 
+    {
+    while ( (ch=fgetc(arquivo))!='\n'){if(ch==EOF)break;}
+    return 0;
+    }
+    }
+    else
+    {
+    while ( (ch=fgetc(arquivo))!='\n'){if(ch==EOF)break;}
+    return 0;
+    }
+}
+int faltas_por_materia(int matricula,char* materia)
+{
+	int soma=0;
+	FILE *arq;
+	arq=fopen("Cadastro.txt","r");
+	while ( (fgetc(arq))!='\n'){}
+	while ( (fgetc(arq))!='\n'){}
+	while ( (fgetc(arq))!='\n'){}
+	while ( fgetc(arq)!=EOF)
+	{
+		soma=soma+ ler_linha2(matricula,materia,arq);
+	}
+	fclose(arq);
+	return soma;
+}
+
+int main()
+{
+	while(1)
+	{
+	
+	 mat carga_de_disciplinas[9] ={{"Fisica", 75}, {"Calculo", 75}, {"Alg Lin", 60}, {"Fis Exp", 30}, {"Atv Extra", 40}, {"Quimica", 40}, {"Lab Quim", 40}, {"IC", 40}, {"TFM", 40}};
+	ALUNO *a;
+	FILE*arq;
+	char ch,ch1=0,falta_justificada;
+	char data[11];
+	char materia[20];
+	int n_faltas,verdade=1,i;
+	arq=fopen("Cadastro.txt","r");
+	if(arq==NULL)
+	{
+	fclose(arq);
+	arq=fopen("Cadastro.txt","w");
+	fprintf(arq," MATRICULA     NOME                           TURMA      DATA       MATERIA      N DE     FALTA\n                                                                                 FALTAS   JUSTIFICADA\n");
+	fclose(arq);
+    }
+    else
+    fclose(arq);
+    printf("\nDigite 1 para incluir,2 para atualizar,3 para excluir um registro,ou 4 para encerrar o programa:");scanf(" %c",&ch);
+    if(ch=='4')return 0;
+    if(ch=='1')
+{
+	
+		a=(ALUNO*) malloc(sizeof(ALUNO));
+		while(verdade==1)
+{
+	fflush(stdin);
+	printf("Digite o nome do aluno:");gets(a->nome);
+	printf("Digite a matricula do aluno:");gets(a->matricula);
+	printf("Digite a turma do aluno:");gets(a->turma);
+    printf("Digite a data da falta:");gets(data);
+    printf("Digite a materia da falta:");gets(materia);
+	printf("Digite o numero de tempos faltosos:");scanf(" %d",&n_faltas);
+	printf("Falta justificada?");scanf(" %c",&falta_justificada);
+	printf("NOME:%s   MATRICULA:%s   TURMA:%s   DATA:%s   MATERIA:%s   NUMERO DE FALTAS:%d   FALTA JUSTIFICADA:%c"
+	,a->nome,a->matricula,a->turma,data,materia,n_faltas,falta_justificada);
+	printf("\nAs informacoes estao corretas?S(sim) ou N(nao)\n");scanf(" %c",&ch);
+	if(ch=='S')
+	{
+	incluir(*a,data,materia,n_faltas,falta_justificada);
+	printf("\nCadastro de faltas atualizado com sucesso!\n");	
+	imprimir_arquivo();
+	verdade=0;
+    }
+    else
+    ;	
+}
+	free(a);
+}
+    else
+    if(ch=='3')
+    {
+		ch1=1;
+		imprimir_arquivo();
+		while(verdade==1)
+		{
+		
+		printf("\nDigite o numero do registro que voce quer apagar:");
+		scanf(" %d",&i);
+		imprimir_linha(i);
+		printf("\nEsse eh o registro que voce quer apagar?S(sim) ou N(nao)\n");
+		scanf(" %c",&ch);
+		if(ch=='S')
+		{
+		apagar_linha(i);
+		printf("\nCadastro de faltas atualizado com sucesso!\n");	
+		imprimir_arquivo();verdade=0;
+	    }
+	    }
+	    
+	}
+	else
+	if(ch=='2')
+	{
+		imprimir_arquivo();
+		while(verdade==1)
+		{		
+		printf("\nDigite o numero do registro que voce quer atualizar:");
+		scanf(" %d",&i);
+		imprimir_linha(i);
+		printf("\nEsse eh o registro que voce quer atualizar?S(sim) ou N(nao)\n");
+		scanf(" %c",&ch);
+		if(ch=='S')
+		{
+			printf("Digite as informacoes atualizadas desse registro:\n\n");
+		
+		a=(ALUNO*) malloc(sizeof(ALUNO));
+		while(verdade==1)
+{
+	fflush(stdin);
+	printf("Digite o nome do aluno:");gets(a->nome);
+	printf("Digite a matricula do aluno:");gets(a->matricula);
+	printf("Digite a turma do aluno:");gets(a->turma);
+    printf("Digite a data da falta:");gets(data);
+    printf("Digite a materia da falta:");gets(materia);
+	printf("Digite o numero de tempos faltosos:");scanf(" %d",&n_faltas);
+	printf("Falta justificada?");scanf(" %c",&falta_justificada);
+	printf("NOME:%s   MATRICULA:%s   TURMA:%s   DATA:%s   MATERIA:%s   NUMERO DE FALTAS:%d   FALTA JUSTIFICADA:%c"
+	,a->nome,a->matricula,a->turma,data,materia,n_faltas,falta_justificada);
+	printf("\nAs informacoes estao corretas?S(sim) ou N(nao)\n");scanf(" %c",&ch);
+	if(ch=='S')
+	{
+	atualizar_linha(i,*a,data,materia,n_faltas,falta_justificada);
+	printf("\nCadastro de faltas atualizado com sucesso!\n");		
+	imprimir_arquivo();
+	verdade=0;
+    }
+    else
+    ;	
+}
+	free(a);
+	}
+	else;
+}
+}
+else {printf("Digito invalido!");ch=1;}
+if(ch1==1);
+else
+{
+ i=tempo(data);
+ if(i<7);
+ else
+ {  
+	float a[9]; 
+	 printf("\n\nRelatorio semanal de pontos perdidos:\n\n");
+	 printf(" ALUNO     FISICA(75) CALCULO(75) ALG LIN(60) FIS EXP(30) ATV EXTRA(40) QUIMICA(40) LAB QUIM(40)       IC(40)     TFM(40)      PONTOS DE FALTAS\n                                                                                                                                    TOTAIS\n\n");
+	 int tamanho,nlinhas,j,k=0,l,v=0;
+	arq=fopen("Cadastro.txt","r");
+	fseek(arq,0,2);tamanho=ftell(arq);nlinhas=(tamanho-97-103)/93;fclose(arq);
+	
+	MATRIC alunos[nlinhas+1];
+    for(i=1;i<=nlinhas;i++)
+    {
+	(alunos[i]).faltas[0]=faltas_por_materia(matricula_linha(i),"Fisica       ");a[0]=(alunos[i]).faltas[0];
+	(alunos[i]).faltas[1]=faltas_por_materia(matricula_linha(i),"Calculo      ");a[1]=(alunos[i]).faltas[1];
+	(alunos[i]).faltas[2]=faltas_por_materia(matricula_linha(i),"Alg Lin      ");a[2]=(alunos[i]).faltas[2];
+	(alunos[i]).faltas[3]=faltas_por_materia(matricula_linha(i),"Fis Exp      ");a[3]=(alunos[i]).faltas[3];
+	(alunos[i]).faltas[4]=faltas_por_materia(matricula_linha(i),"Atv Extra    ");a[4]=(alunos[i]).faltas[4];
+	(alunos[i]).faltas[5]=faltas_por_materia(matricula_linha(i),"Quimica      ");a[5]=(alunos[i]).faltas[5];
+	(alunos[i]).faltas[6]=faltas_por_materia(matricula_linha(i),"Lab Quim     "); a[6]=(alunos[i]).faltas[6];
+	(alunos[i]).faltas[7]=faltas_por_materia(matricula_linha(i),"IC           "); a[7]=(alunos[i]).faltas[7];
+	(alunos[i]).faltas[8]=faltas_por_materia(matricula_linha(i),"TFM          "); a[8]=(alunos[i]).faltas[8];
+    (alunos[i]).matricula=matricula_linha(i);
+    (alunos[i]).pontos=pontos_perdidos(matricula_linha(i));
+    for(j=i-1;j>=1;j--)
+    {
+    if(alunos[i].matricula==alunos[j].matricula)
+    k=1;
+    }
+    if(k==0)
+    {
+    printf(" %d     ",alunos[i].matricula);
+    printf("%d Faltas  ",alunos[i].faltas[0]);
+    if(alunos[i].faltas[0]<10)printf(" ");
+    printf("%d Faltas   ",alunos[i].faltas[1]);
+       if(alunos[i].faltas[1]<10)printf(" ");
+    printf("%d Faltas   ",alunos[i].faltas[2]);
+       if(alunos[i].faltas[2]<10)printf(" ");
+    printf("%d Faltas   ",alunos[i].faltas[3]);
+       if(alunos[i].faltas[3]<10)printf(" ");
+    printf("%d Faltas     ",alunos[i].faltas[4]);
+       if(alunos[i].faltas[4]<10)printf(" ");
+    printf("%d Faltas   ",alunos[i].faltas[5]);
+       if(alunos[i].faltas[5]<10)printf(" ");
+       printf("%d Faltas       ",alunos[i].faltas[6]);
+        if(alunos[i].faltas[6]<10)printf(" ");
+       printf("%d Faltas    ",alunos[i].faltas[7]);
+        if(alunos[i].faltas[7]<10)printf(" ");
+       printf("%d Faltas            ",alunos[i].faltas[8]);
+        if(alunos[i].faltas[8]<10)printf(" ");
+        printf("%d",alunos[i].pontos);
+        if(alunos[i].pontos<10){printf(" ");}if(alunos[i].pontos<100)printf(" ");
+        for(l=0;l<9;l++)
+        {
+			if( (a[l]/carga_de_disciplinas[l].tempos>=0.25) || (alunos[i].pontos>=90))
+			v=1;
+		}
+       
+       if(v==1)
+       printf("    ***ALUNO REPROVADO POR LIMITE DE PONTOS E/OU CARGA HORARIA***\n");    
+       else
+       {
+        for(l=0;l<9;l++)
+        {
+			if(((a[l]/carga_de_disciplinas[l].tempos>=0.15)&&(a[l]/carga_de_disciplinas[l].tempos<0.25)) || ((alunos[i].pontos>=60) && (alunos[i].pontos<90))   )
+			v=1;
+		}
+		if(v==1)
+		printf("    ***ALUNO PROXIMO DO LIMITE DE PONTOS E/OU CARGA HORARIA***\n");
+		else
+		printf("\n");
+	   }
+        
+        
+        
+       
+       }
+       
+       
+      v=0; 
+    k=0;
+    }
+    
+	
+	 arq=fopen("tempo.txt","w");
+	 for(i=0;i<5;i++)
+	fputc((int) data[i],arq);
+	fputc((int) ' ',arq);
+	fputc((int) '0',arq);
+	fclose(arq);
+	 
+ 
+
+}
+}
+}
+}
